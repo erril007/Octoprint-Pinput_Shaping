@@ -58,9 +58,9 @@ class PinputShapingPlugin(octoprint.plugin.StartupPlugin,
 
         self._plugin_logger = logging.getLogger(
             "octoprint.plugins.Pinput_Shaping")
-        
-        
-   
+
+
+
     def configure_logger(self):
         # Get the base path for logs from the settings
         log_base_path = os.path.expanduser("~/.octoprint/logs")
@@ -81,9 +81,9 @@ class PinputShapingPlugin(octoprint.plugin.StartupPlugin,
 
     def get_current_function_name(self):
         return inspect.getframeinfo(inspect.currentframe().f_back).function
-    
-    
-               
+
+
+
     def get_settings_defaults(self):
         return {
             "sizeX": 220,
@@ -94,7 +94,7 @@ class PinputShapingPlugin(octoprint.plugin.StartupPlugin,
             "freqStart": 5,
             "freqEnd": 132,
             "dampingRatio": "0.05"
-        }    
+        }
 
 
     def get_template_configs(self):
@@ -107,13 +107,13 @@ class PinputShapingPlugin(octoprint.plugin.StartupPlugin,
         return {
             "js": ["js/pinput_shaping.js"],  # JS file
         }
-        
+
     def get_assets_folder(self):
         return os.path.join(os.path.dirname(os.path.realpath(__file__)), "static")
-    
-        
-   
-    
+
+
+
+
 
     def on_after_startup(self):
         self.configure_logger()
@@ -128,7 +128,7 @@ class PinputShapingPlugin(octoprint.plugin.StartupPlugin,
         self._plugin_logger.info(f"Frequency start: {self._settings.get(['freqStart'])}")
         self._plugin_logger.info(f"Frequency end: {self._settings.get(['freqEnd'])}")
         self._plugin_logger.info(f"Damping ratio: {self._settings.get(['dampingRatio'])}")
-        
+
         self._plugin_manager.send_plugin_message(self._identifier, {"msg": "Pinput Shaping Plugin loaded"})
 
         # Get the plugin's data folder (OctoPrint manages this)
@@ -261,11 +261,11 @@ class PinputShapingPlugin(octoprint.plugin.StartupPlugin,
     # Run the test head movements
     def _run_axis_test(self, axis):
         self._plugin_logger.info(f">>>>>> Running Sweeping {axis} test")
-        #create variable with the value of datetime in iso format 
-        dt= time.strftime("%Y%m%dT%H%M%S")        
+        #create variable with the value of datetime in iso format
+        dt= time.strftime("%Y%m%dT%H%M%S")
         self.csv_filename = os.path.join(self.metadata_dir, f"Raw_accel_values_AXIS_{axis}_{dt}.csv")
-        
-           
+
+
         printer_status = self._printer.get_state_id()
 
         if printer_status == "OPERATIONAL":
@@ -296,10 +296,10 @@ class PinputShapingPlugin(octoprint.plugin.StartupPlugin,
     # Run the resonance test
     def _run_resonance_test(self, axis, x, y, z):
         self._plugin_logger.info(f"Running resonance test for {axis} axis at position ({x}, {y}, {z})")
-         #create variable with the value of datetime in iso format 
-        dt= time.strftime("%Y%m%dT%H%M%S")        
+         #create variable with the value of datetime in iso format
+        dt= time.strftime("%Y%m%dT%H%M%S")
         self.csv_filename = os.path.join(self.metadata_dir, f"Raw_accel_values_AXIS_{axis}_{dt}.csv")
-      
+
         printer_status = self._printer.get_state_id()
 
         if printer_status == "OPERATIONAL":
@@ -328,7 +328,7 @@ class PinputShapingPlugin(octoprint.plugin.StartupPlugin,
 
     # Precompute the sweep commands
     def test_sweep(self, axis):
-        
+
         self.currentAxis = axis
         self._plugin_logger.info(f"Precomputing sweep commands for Axis {axis}...")
         t = np.linspace(0, self.DURATION, num=2000)  # 2000 points over 20 seconds
@@ -338,34 +338,34 @@ class PinputShapingPlugin(octoprint.plugin.StartupPlugin,
         commands.append(f"M117 Testing Sweep on {axis}-Axis")
         for pos in positions:
             commands.append("G0 {}{} F{}".format(axis, pos, 60 *self.ACCELERATION))
-        
-        commands.append(f"M117 Finish Test Sweep on {axis}-Axis")    
-        
+
+        commands.append(f"M117 Finish Test Sweep on {axis}-Axis")
+
         return commands
 
-    
-        
-    # Precompute the resonance test commands    
+
+
+    # Precompute the resonance test commands
     def precompute_sweep(self, axis, x, y, z):
         num_cycles = 800
         steps_per_cycle = 4
-        
+
         amplitude = 5
         min_amp = 1
         self.currentAxis = axis
-        
+
         accel_min = int(self._settings.get(["accelMin"]))
         accel_max = int(self._settings.get(["accelMax"]))
         freq_start = float(self._settings.get(["freqStart"]))
         freq_end = float(self._settings.get(["freqEnd"]))
-        
-    
+
+
         freqs = np.linspace(freq_start, freq_end, num_cycles)
         amplitudes = np.linspace(amplitude, min_amp, num_cycles)
         accelerations = np.linspace(accel_min, accel_max, num_cycles)
         feedrates = np.clip(100 * accelerations, 2000, 15000)
-        
-      
+
+
         commands = []
         commands.append("M117 Starting resonance test")
         commands.append("M117 ADXL|ON")
@@ -396,43 +396,43 @@ class PinputShapingPlugin(octoprint.plugin.StartupPlugin,
         commands.append(f"M117 Resonance Test complete")
         commands.append("M204 P1500 R500 T1500") # restoring original accel
         commands.append("M400")  # Wait for all moves to complete
-            
+
         return commands
-    
-    
+
+
     def home_and_park(self, x, y, z):
         self._plugin_logger.info("Homing and parking printer...")
         start_pos = f"X{x} Y{y} Z{z}"
-        self._printer.commands("G28")
+        self._printer.commands("G28 O")
         self._printer.commands(f"G0 {start_pos} F1500")
         self._printer.commands("G4 P1000")
         return
-        
+
 
     # def gcode_sending_handler(self, comm_instance, phase, cmd, cmd_type, gcode, *args, **kwargs):
     #     #self._plugin_logger.info(f"Intercepted G-code: {cmd}")
-        
+
     #     if cmd.startswith("O9000"):
     #         if cmd == "O9000 ADXL|ON":
     #             self._plugin_logger.info("Detected command to Start ADXL345 capture")
     #             threading.Thread(target=self._start_adxl_capture(3200)).start()
     #             self.adxl_capture_active = True
     #             return [cmd]
-            
-                            
+
+
     #     # Return the cmd
     #     return [cmd]
-    
-    
+
+
     def gcode_received_handler(self, comm, line, *args, **kwargs):
-        
-        
-        
+
+
+
         if "Input Shaping:" in line:
             self._plugin_logger.info("Detected Input Shaping message")
             self.getM593 = True
             self.shapers = {}
-            
+
         # Extract the shaper values from the line
         match_x = re.match(r".*M593 X F([\d.]+) D([\d.]+)", line)
         match_y = re.match(r".*M593 Y F([\d.]+) D([\d.]+)", line)
@@ -455,8 +455,8 @@ class PinputShapingPlugin(octoprint.plugin.StartupPlugin,
                 json.dump(self.shapers, f)
             self._plugin_logger.info(f"Shaper backup saved: {self.shapers}")
             self.getM593 = False
-                    
-        
+
+
         elif "Resonance Test complete" in line:
             self._plugin_logger.info("Detected M117 Resonance Test complete message")
             self._plugin_logger.info(f"Resonance Test complete for {self.currentAxis} axis")
@@ -467,23 +467,23 @@ class PinputShapingPlugin(octoprint.plugin.StartupPlugin,
             self.adxl_capture_active = False
             time.sleep(3)
             self.get_input_shaping_results()
-            
-        
+
+
         elif "Finish Test Sweep" in line:
-            self._plugin_logger.info(f"Finished Test Sweep for {self.currentAxis} axis") 
+            self._plugin_logger.info(f"Finished Test Sweep for {self.currentAxis} axis")
             self._plugin_manager.send_plugin_message(self._identifier, dict(type="close_popup"))
-            
+
         elif "ADXL|ON" in line:
             self._plugin_logger.info("Detected command to Start ADXL345 capture")
             self._plugin_logger.info("ADXL345 capture started...")
             self.adxl_capture_active = True
-            threading.Thread(target=self._start_adxl_capture(3200)).start()       
+            threading.Thread(target=self._start_adxl_capture(3200)).start()
 
-            
-        return line    
-    
-    
-    
+
+        return line
+
+
+
     def restore_shapers(self):
         backup_path = os.path.join(self.metadata_dir, "current_shaper_values.json")
         if not os.path.exists(backup_path):
@@ -500,11 +500,11 @@ class PinputShapingPlugin(octoprint.plugin.StartupPlugin,
                 cmd = f"M593 {axis} F{freq:.2f} D{damp} "
                 self._printer.commands(cmd)
                 self._plugin_logger.info(f"Restored: {cmd}")
-        
-    
+
+
     def get_input_shaping_results(self):
         self._plugin_logger.info(f"Getting Input Shaping results for {self.currentAxis} Axis...")
-        
+
         if self.adxl_capture_active:
             self._plugin_logger.warning("ADXL345 capture is still active. Stopping it first.")
             self._stop_adxl_capture()
@@ -521,7 +521,7 @@ class PinputShapingPlugin(octoprint.plugin.StartupPlugin,
         signal_path, psd_path, shaper_results, best_shaper, base_freq = analyzer.generate_graphs()
         command = analyzer.get_recommendation()
         data_for_plotly = analyzer.get_plotly_data()
-     
+
         self._plugin_logger.info(f"Best shaper for {self.currentAxis} axis: {best_shaper}")
         self._plugin_logger.info(f"Signal graph saved to: {signal_path}")
         self._plugin_logger.info(f"PSD graph saved to: {psd_path}")
@@ -545,9 +545,9 @@ class PinputShapingPlugin(octoprint.plugin.StartupPlugin,
                 } for k, v in shaper_results.items()
             },
             "base_freq": float(base_freq)
-            
+
         })
-        
+
         data_for_plotly.update({
             "type": "plotly_data",
             "description": "Input Shaping Plotly Data",
@@ -557,21 +557,21 @@ class PinputShapingPlugin(octoprint.plugin.StartupPlugin,
         self._plugin_manager.send_plugin_message(self._identifier, data_for_plotly)
         self.restore_shapers()
         self._plugin_logger.info("Restored shaper values to printer.")
-        
-        
-        return    
-    
-    
-   
+
+
+        return
+
+
+
     def _start_adxl_capture(self, freq=3200):
         self._plugin_logger.info("Starting ADXL345 capture...")
         cmd = f"sudo adxl345spi -f {freq} -s {self.csv_filename}"
         logfile_path = os.path.join(os.path.dirname(self.csv_filename), "adxl_output.log")
-        
+
         try:
             self._adchild = pexpect.spawn(cmd, timeout=600, encoding='utf-8')
             self._adchild.logfile = open(logfile_path, "w")
-            
+
             # Wait for the "Press Q to stop" prompt
             self._adchild.expect("Press Q to stop", timeout=600)
             self._plugin_logger.info("ADXL345 ready and capturing.")
@@ -584,7 +584,7 @@ class PinputShapingPlugin(octoprint.plugin.StartupPlugin,
         except Exception as e:
             self._plugin_logger.error(f"Unexpected error: {e}")
             raise
-   
+
 
     def _stop_adxl_capture(self):
         self._plugin_logger.info("Stopping ADXL345 capture...")
@@ -603,10 +603,10 @@ class PinputShapingPlugin(octoprint.plugin.StartupPlugin,
                     self._adchild.logfile.close()
         else:
             self._plugin_logger.warning("Process not alive.")
-            
-            
-            
-            
+
+
+
+
 
     def get_update_information(self):
         return {
