@@ -640,7 +640,7 @@ class PinputShapingPlugin(octoprint.plugin.StartupPlugin,
             self._plugin_logger.info("Starting ADXL345 capture...")
             wrapper = "adxl345spi"
 
-        cmd = f"sudo {wrapper} -f {freq} -s {self.csv_filename}"
+        cmd = f"sudo {wrapper} -f {freq} -s {self.csv_filename} -p /dev/ttyACM0"
         logfile_path = os.path.join(os.path.dirname(self.csv_filename), "accelerometer_output.log")
 
         try:
